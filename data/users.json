@@ -1,0 +1,6 @@
+[
+  {"user_id":"intern_001","name":"Arya Intern","role":"intern","clearance_level":1,"department":"general"},
+  {"user_id":"analyst_001","name":"Bob Analyst","role":"analyst","clearance_level":2,"department":"finance"},
+  {"user_id":"manager_001","name":"Carol Manager","role":"manager","clearance_level":3,"department":"risk"},
+  {"user_id":"executive_001","name":"Sarah Chen","role":"executive","clearance_level":5,"department":"executive"}
+]
