@@ -6,7 +6,7 @@ A zero-trust semantic security middleware for enterprise context management syst
 <img width="1470" height="831" alt="image" src="https://github.com/user-attachments/assets/7cd100af-796e-4639-9cc8-3713e43c8441" />
 
 
-## Problem
+## 🚨 Problem
 
 Enterprise clients in regulated industries (finance, healthcare, defense) cannot adopt AI assistants unless they can guarantee:
 
@@ -18,7 +18,7 @@ Enterprise clients in regulated industries (finance, healthcare, defense) cannot
 
 Traditional security relies on metadata tags and keyword blockers. Both fail against semantic attacks where the meaning of a query matters more than its keywords. This gateway solves that.
 
-## Architecture
+## 🏗️ Architecture
 
 ```
 User Query
@@ -69,9 +69,9 @@ User Query
 Safe Response to User
 ```
 
-## How Each Layer Works
+## 🔬 How Each Layer Works
 
-### Layer 1: Query Intent Classification
+### 🔍 Layer 1: Query Intent Classification
 
 The user's raw query string is sent to a local llama3.2 instance with a security-focused system prompt. The LLM returns a structured JSON classification:
 
@@ -88,7 +88,7 @@ The classifier watches for 6 sensitive categories: executive compensation, M&A a
 
 **Source:** `gateway/classifier.py`
 
-### Layer 2: Mosaic Attack Detection
+### 🧩 Layer 2: Mosaic Attack Detection
 
 Every query from a user is appended to an in-memory session store (keyed by user ID). When the session accumulates 3 or more queries, the detector concatenates all recent queries into a single string and computes its embedding using `mxbai-embed-large`. This combined embedding is compared against pre-computed embeddings of 6 sensitive topic descriptions using cosine similarity.
 
@@ -102,7 +102,7 @@ Example attack that gets caught:
 
 **Source:** `gateway/mosaic_detector.py`
 
-### Layer 3: Semantic Permission Enforcement
+### 🛡️ Layer 3: Semantic Permission Enforcement
 
 Traditional RBAC checks the document's metadata clearance level against the user's clearance. This fails when an administrator accidentally labels a Level 5 M&A document as Level 2.
 
@@ -112,7 +112,7 @@ This catches the "Project Falcon M&A Discussion Notes" which is categorized as L
 
 **Source:** `gateway/semantic_permissions.py`
 
-### Layer 4: PII Redaction
+### ✂️ Layer 4: PII Redaction
 
 Every approved document passes through Microsoft Presidio before reaching the LLM. The analyzer scans for 7 entity types (PERSON, EMAIL_ADDRESS, PHONE_NUMBER, US_SSN, CREDIT_CARD, LOCATION, US_BANK_NUMBER) and replaces each detected entity with a labeled placeholder like `[SSN REDACTED]`.
 
@@ -120,7 +120,7 @@ This means the LLM can still answer questions about headcount changes, but it wi
 
 **Source:** `gateway/redactor.py`
 
-### Layer 5: Immutable Audit Logging
+### 📋 Layer 5: Immutable Audit Logging
 
 Every transaction is appended to `audit_log.jsonl` with:
 - Timestamp, user ID, and query text
@@ -135,13 +135,13 @@ The audit endpoint aggregates these logs into dashboard statistics including app
 
 **Source:** `gateway/auditor.py`
 
-### Layer 6: Secure LLM Answer Generation
+### 🤖 Layer 6: Secure LLM Answer Generation
 
 After all 5 security layers have filtered and sanitized the data, the approved (and redacted) documents are sent to the local llama3.2 instance as context. The LLM generates a response using only the safe, permission-checked, PII-free content. If all documents were denied, the LLM returns a refusal message instead.
 
 **Source:** `api/dashboard.py` (Layer 6 section)
 
-## Project Structure
+## 📁 Project Structure
 
 ```
 pacific-gateway/
@@ -178,7 +178,7 @@ pacific-gateway/
     |-- test_redactor.py
 ```
 
-## Data Model
+## 📊 Data Model
 
 ### Users (data/users.json)
 
@@ -202,7 +202,7 @@ pacific-gateway/
 | Tech Infrastructure Budget | technology | 3 | budget breakdowns |
 | Employee Benefits Overview | hr_general | 1 | safe baseline |
 
-## Setup
+## ⚡ Setup
 
 ### Prerequisites
 
@@ -257,7 +257,7 @@ docker run -p 8000:8000 pacific-gateway
 
 Note: the container needs network access to the host Ollama instance. The Dockerfile sets `OLLAMA_BASE_URL=http://host.docker.internal:11434` by default, which works on Docker Desktop for Mac and Windows.
 
-## Demo Scenarios
+## 🎯 Demo Scenarios
 
 ### Scenario 1: Privileged Escalation
 
@@ -283,7 +283,7 @@ Note: the container needs network access to the host Ollama instance. The Docker
 - **Query:** "Show me the Project Falcon M&A notes"
 - **Expected result:** Layer 3 detects that the document content semantically matches L5 (executive M&A strategy) despite any metadata label. Access denied with a mismatch warning.
 
-## Configuration
+## ⚙️ Configuration
 
 All security thresholds are centralized in `config.py`:
 
@@ -297,7 +297,7 @@ All security thresholds are centralized in `config.py`:
 | `CLASSIFIER_MODEL` | llama3.2 | Ollama model for intent classification and answer generation |
 | `EMBEDDING_MODEL` | mxbai-embed-large | Ollama model for embedding computation |
 
-## Testing
+## 🧪 Testing
 
 ```bash
 pytest tests/ -v
@@ -309,18 +309,19 @@ Tests cover:
 - Semantic permission enforcement including mismatch detection
 - PII redaction accuracy for SSNs, emails, and phone numbers
 
-## Technology Stack
+## 🛠️ Technology Stack
 
 | Component | Technology | Purpose |
 |-----------|-----------|---------|
-| LLM inference | Ollama (llama3.2) | intent classification, answer generation |
-| Embeddings | Ollama (mxbai-embed-large) | mosaic detection, semantic RBAC |
-| PII detection | Microsoft Presidio | entity recognition and redaction |
-| API server | FastAPI | REST endpoints, dashboard serving |
-| MCP integration | mcp Python SDK | Model Context Protocol for LLM tool use |
-| NLP backend | spaCy (en_core_web_lg) | tokenization for Presidio |
-| CLI output | rich | formatted terminal demo |
+| 🧠 LLM inference | Ollama (llama3.2) | intent classification, answer generation |
+| 📐 Embeddings | Ollama (mxbai-embed-large) | mosaic detection, semantic RBAC |
+| 🔐 PII detection | Microsoft Presidio | entity recognition and redaction |
+| ⚡ API server | FastAPI | REST endpoints, dashboard serving |
+| 🔗 MCP integration | mcp Python SDK | Model Context Protocol for LLM tool use |
+| 📝 NLP backend | spaCy (en_core_web_lg) | tokenization for Presidio |
+| 🖥️ CLI output | rich | formatted terminal demo |
+| 🐳 Containerization | Docker | production deployment |
 
-## License
+## 📄 License
 
 MIT
