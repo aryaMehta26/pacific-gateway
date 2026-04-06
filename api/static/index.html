@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Pacific Security Gateway — Live ECMS Console</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #030712;
+      --panel: rgba(17, 24, 39, 0.7);
+      --border: rgba(55, 65, 81, 0.6);
+      --text: #e5e7eb;
+      --dim: #9ca3af;
+      --blue: #3b82f6;
+      --cyan: #06b6d4;
+      --green: #10b981;
+      --red: #ef4444;
+      --purple: #8b5cf6;
+      --amber: #f59e0b;
+      --glow-blue: 0 0 20px rgba(59, 130, 246, 0.4);
+      --glow-red: 0 0 20px rgba(239, 68, 68, 0.4);
+    }
+    
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+      background-image: 
+        radial-gradient(circle at 50% 0%, rgba(59, 130, 246, 0.15) 0%, transparent 50%),
+        linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+      background-size: 100% 100%, 30px 30px, 30px 30px;
+    }
+
+    /* Navbar */
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 40px;
+      background: rgba(3, 7, 18, 0.8);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 100;
+    }
+    .brand {
+      display: flex; align-items: center; gap: 12px;
+      font-weight: 700; font-size: 14px; letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    .status-dot {
+      width: 8px; height: 8px; background: var(--green);
+      border-radius: 50%; box-shadow: 0 0 10px var(--green);
+      animation: pulse 2s infinite;
+    }
+
+    /* Main Grid */
+    .container {
+      display: grid;
+      grid-template-columns: 300px 1fr 340px;
+      gap: 24px;
+      padding: 32px 40px;
+      max-width: 1800px;
+      margin: 0 auto;
+      height: calc(100vh - 70px);
+    }
+
+    /* Panels */
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      display: flex; flex-direction: column;
+      backdrop-filter: blur(10px);
+      overflow: hidden;
+    }
+    .panel-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      font-size: 11px; font-weight: 600;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      background: rgba(0,0,0,0.2);
+    }
+    .panel-body { padding: 20px; overflow-y: auto; flex: 1; }
+
+    /* Interactive Elements */
+    .identity-btn {
+      width: 100%; text-align: left;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      padding: 12px; border-radius: 8px;
+      color: var(--text); cursor: pointer;
+      margin-bottom: 8px; transition: all 0.2s;
+    }
+    .identity-btn:hover { background: rgba(255,255,255,0.08); }
+    .identity-btn.active {
+      border-color: var(--blue);
+      background: rgba(59,130,246,0.1);
+      box-shadow: inset 0 0 10px rgba(59,130,246,0.2);
+    }
+    .user-name { font-size: 14px; font-weight: 600; }
+    .user-role { font-size: 11px; color: var(--dim); margin-top: 4px; font-family: monospace; }
+    .badge {
+      display: inline-block; padding: 2px 6px; border-radius: 4px;
+      font-size: 10px; font-weight: 600; font-family: 'JetBrains Mono', monospace;
+    }
+    .badge-clear { border: 1px solid currentColor; margin-top: 8px; }
+
+    /* Custom Query Box */
+    .query-area {
+      background: #000;
+      border: 1px solid var(--blue);
+      border-radius: 8px;
+      margin-bottom: 24px;
+      box-shadow: var(--glow-blue);
+      transition: all 0.3s;
+    }
+    .query-input {
+      width: 100%; background: transparent; border: none;
+      color: #fff; padding: 20px; font-size: 16px;
+      font-family: inherit; outline: none; resize: none;
+    }
+    .query-footer {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px 20px; border-top: 1px solid rgba(59,130,246,0.3);
+      background: rgba(59,130,246,0.05);
+    }
+    .exec-btn {
+      background: var(--blue); color: #fff; border: none;
+      padding: 8px 24px; border-radius: 4px; font-weight: 600;
+      cursor: pointer; transition: all 0.2s; display: flex; gap: 8px; align-items: center;
+    }
+    .exec-btn:hover { background: #2563eb; transform: translateY(-1px); box-shadow: var(--glow-blue); }
+    .exec-btn:disabled { background: #374151; cursor: not-allowed; box-shadow: none; transform: none; }
+
+    /* Live Pipeline Visualizer */
+    .pipeline { display: flex; flex-direction: column; gap: 16px; }
+    .layer {
+      border: 1px solid var(--border);
+      border-radius: 8px; padding: 16px;
+      background: rgba(0,0,0,0.5);
+      position: relative; overflow: hidden;
+      opacity: 0.3; transition: all 0.5s ease;
+      transform: translateY(10px);
+    }
+    .layer.active {
+      opacity: 1; transform: translateY(0);
+      border-color: var(--cyan);
+      box-shadow: 0 0 15px rgba(6,182,212,0.2);
+    }
+    .layer.done {
+      opacity: 1; transform: translateY(0);
+      border-color: rgba(255,255,255,0.1);
+    }
+    .layer.danger {
+      border-color: var(--red);
+      box-shadow: var(--glow-red);
+      animation: shake 0.4s;
+    }
+    
+    .layer-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; font-weight: 600; }
+    .layer-icon { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 12px; border-radius: 4px; background: rgba(255,255,255,0.1); }
+    .layer-content { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--dim); line-height: 1.6; }
+    .highlight { color: #fff; font-weight: 600; }
+    .terminal-typewriter { border-right: 2px solid var(--cyan); white-space: pre-wrap; animation: blink 1s step-end infinite; }
+
+    /* Vector DB Section (Live specific) */
+    .db-doc {
+      background: rgba(0,0,0,0.4); border: 1px solid var(--border);
+      padding: 12px; border-radius: 6px; margin-bottom: 8px;
+    }
+    .doc-title { font-size: 12px; font-weight: 600; }
+    .doc-meta { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--dim); margin-top: 4px; }
+    .redact-pill { background: rgba(239,68,68,0.2); color: var(--red); padding: 0 4px; border-radius: 2px; }
+
+    /* Animations */
+    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+    @keyframes blink { 50% { border-color: transparent; } }
+    @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+    
+    .loading-bar {
+      height: 2px; background: var(--cyan); width: 0%;
+      position: absolute; bottom: 0; left: 0;
+      transition: width 0.3s;
+    }
+    .layer.active .loading-bar { animation: progress 2s infinite linear; }
+    @keyframes progress { 0% { width: 0%; left: 0; } 50% { width: 100%; left: 0; } 51% { width: 100%; left: 100%; } 100% { width: 0%; left: 100%; } }
+
+    /* Scrollbars */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+  </style>
+</head>
+<body>
+
+  <div class="nav">
+    <div class="brand">
+      <div class="status-dot"></div>
+      Zero-Trust Semantic Gateway
+    </div>
+    <div style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--dim);">
+      Connected to: Local Ollama (llama3.2 + mxbai-embed)
+    </div>
+  </div>
+
+  <div class="container">
+    
+    <!-- LEFT: Identity & Arsenal -->
+    <div class="panel">
+      <div class="panel-header">1. Set Active Context</div>
+      <div class="panel-body">
+        <div id="users-list" style="margin-bottom: 32px;"></div>
+        
+        <h3 style="font-size: 11px; color: var(--dim); text-transform: uppercase; margin-bottom: 12px;">Live Execution Scenarios</h3>
+        
+        <button class="identity-btn" onclick="runPresetScenario(1)">
+          <div class="user-name">Scenario 1: Exec Comp</div>
+          <div class="user-role">Intern asks "What is CEO salary?" → DENIED</div>
+        </button>
+        <button class="identity-btn" onclick="runPresetScenario(2)">
+          <div class="user-name">Scenario 2: PII Extraction</div>
+          <div class="user-role">Analyst asks "Q3 earnings?" → REDACTED</div>
+        </button>
+        <button class="identity-btn" onclick="runPresetScenario(3)">
+          <div class="user-name">Scenario 3: Mosaic Attack</div>
+          <div class="user-role">5 benign queries → BLOCKED on query 4</div>
+        </button>
+        <button class="identity-btn" onclick="runPresetScenario(4)">
+          <div class="user-name">Scenario 4: Mislabeled Doc</div>
+          <div class="user-role">"Project Falcon" blocked despite L2 label</div>
+        </button>
+      </div>
+    </div>
+
+    <!-- CENTER: Execution Console -->
+    <div class="panel" style="border-color: var(--blue); box-shadow: inset 0 0 50px rgba(59,130,246,0.05);">
+      <div class="panel-header" style="background: rgba(59,130,246,0.1); color: var(--blue);">2. Pipeline Processor</div>
+      <div class="panel-body" style="display: flex; flex-direction: column;">
+        
+        <div class="query-area">
+          <textarea id="query-input" class="query-input" placeholder="Initiate vector retrieval query..." rows="2"></textarea>
+          <div class="query-footer">
+            <span style="font-family:monospace; font-size:11px; color:var(--dim)">> Ready for execution</span>
+            <button id="exec-btn" class="exec-btn" onclick="executePipeline()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+              RUN PIPELINE
+            </button>
+          </div>
+        </div>
+
+        <div class="pipeline" id="pipeline-view">
+          <!-- Sequential animated layers drop here -->
+          <div style="text-align: center; color: var(--dim); font-family: monospace; padding: 40px; font-size: 12px;">
+            Awaiting input stream to process through 5 security algorithms.
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- RIGHT: Database Map -->
+    <div class="panel">
+      <div class="panel-header">3. Vector Database Graph</div>
+      <div class="panel-body" id="db-list">
+        <div style="text-align:center; padding: 20px; color:var(--dim);">Loading DB...</div>
+      </div>
+    </div>
+
+  </div>
+
+<script>
+// THIS IS 100% DYNAMIC. NO HARDCODED LOGIC. Hits actual Python backend.
+const API = '';
+let selectedUID = null;
+
+// Initialize Live Data
+async function fetchGlobals() {
+  // Fetch real users generated by Python backend
+  const uRes = await fetch(API + '/api/users');
+  const users = await uRes.json();
+  const uDiv = document.getElementById('users-list');
+  uDiv.innerHTML = users.map(u => {
+    let color = u.clearance_level === 5 ? 'var(--red)' : u.clearance_level === 1 ? 'var(--green)' : 'var(--cyan)';
+    return `
+    <button class="identity-btn" id="uid-${u.user_id}" onclick="selectIdentity('${u.user_id}')">
+      <div class="user-name">${u.name}</div>
+      <div class="user-role">${u.department} | ${u.role}</div>
+      <div class="badge badge-clear" style="color:${color}">CLEARANCE L${u.clearance_level}</div>
+    </button>
+  `}).join('');
+  selectIdentity(users[0].user_id);
+
+  // Fetch real document metadata from Database
+  const dRes = await fetch(API + '/api/documents');
+  const docs = await dRes.json();
+  document.getElementById('db-list').innerHTML = docs.map(d => `
+    <div class="db-doc">
+      <div class="doc-title">${d.title}</div>
+      <div class="doc-meta">ID: ${d.id} | Level: ${d.clearance_level} | ${d.category}</div>
+    </div>
+  `).join('');
+}
+
+function selectIdentity(uid) {
+  selectedUID = uid;
+  document.querySelectorAll('#users-list .identity-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('uid-' + uid).classList.add('active');
+}
+
+// Live typing effect engine
+async function typewrite(elId, text, speed=10) {
+  const el = document.getElementById(elId);
+  el.innerHTML = '';
+  for(let i=0; i<text.length; i++) {
+    el.innerHTML += text.charAt(i);
+    await new Promise(r => setTimeout(r, speed));
+  }
+}
+
+// ── CORE PIPELINE EXECUTION ──
+async function executePipeline(queryOverride = null) {
+  const query = queryOverride || document.getElementById('query-input').value.trim();
+  if(!query || !selectedUID) return;
+
+  const btn = document.getElementById('exec-btn');
+  btn.disabled = true;
+  document.getElementById('query-input').value = query;
+
+  const view = document.getElementById('pipeline-view');
+  view.innerHTML = '';
+
+  for(let i=1; i<=6; i++) {
+    view.innerHTML += `
+      <div class="layer" id="layer-${i}">
+        <div class="loading-bar"></div>
+        <div class="layer-header">
+          <div class="layer-icon">L${i}</div>
+          <span id="label-${i}">Pending Execution...</span>
+        </div>
+        <div class="layer-content terminal-typewriter" id="out-${i}">Waiting...</div>
+      </div>
+    `;
+  }
+
+  // ACTUALLY HIT PYTHON API (Ollama + Presidio)
+  try {
+    // Show L1 running
+    document.getElementById('layer-1').classList.add('active');
+    document.getElementById('label-1').innerText = "Query Intent Classifier (LLM)";
+    document.getElementById('out-1').innerText = "Calling local Ollama inference model...";
+
+    const start = Date.now();
+    const res = await fetch(API + '/api/query', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ query, user_id: selectedUID })
+    });
+    const data = await res.json();
+    
+    await animateResultsSequential(data);
+  } catch(e) {
+    document.getElementById('out-1').innerText = "FATAL ERROR: " + e.message;
+  }
+
+  btn.disabled = false;
+}
+
+// Highly animated sequential reveal of REAL Python data
+async function animateResultsSequential(data) {
+  const delay = ms => new Promise(r => setTimeout(r, ms));
+  
+  if(!data.layers) return;
+
+  for(let i=0; i<data.layers.length; i++) {
+    const layer = data.layers[i];
+    const num = layer.layer;
+    const el = document.getElementById('layer-'+num);
+    const label = document.getElementById('label-'+num);
+    
+    // Activate
+    el.classList.add('active');
+    label.innerText = layer.name;
+    
+    // Simulate thinking time before showing result
+    await typewrite('out-'+num, ">> Processing buffer...");
+    await delay(300);
+    
+    // Deactivate loading, transition to done/danger
+    el.classList.remove('active');
+    
+    const r = layer.result;
+    let content = "";
+    let isDanger = false;
+
+    if(num === 1) { // Intent
+      if(r.risk_level === 'HIGH') isDanger = true;
+      content = `Risk Assessed: [${r.risk_level}]\nCategory: ${r.suspected_category||'N/A'}\nReason: ${r.reasoning}`;
+    }
+    
+    if(num === 2) { // Mosaic
+      if(r.is_mosaic_attack) isDanger = true;
+      content = `Queries in Memory: ${r.query_count}\nConfidence Score: ${(r.confidence*100).toFixed(1)}%\nMosaic Target: ${r.suspected_target||'None'}`;
+      if(isDanger) content += `\n>> [EMERGENCY SYSTEM LOCK ACTIVATED]`;
+    }
+    
+    if(num === 3) { // Semantics
+      if(r.denied_count > 0) isDanger = true;
+      content = `Granted: ${r.approved_count} | Blocked: ${r.denied_count}\n`;
+      r.documents?.forEach(d => {
+        content += `${d.approved?'[OK]':'[BLOCKED]'} ${d.title} (Meta: L${d.metadata_level} | Semantic: L${d.semantic_level})\n`;
+      });
+    }
+
+    if(num === 4) { // PII Redact
+      content = `Global PII Entities Stripped: ${r.total_redactions}\n`;
+      r.documents?.filter(d=>d.redaction_count > 0).forEach(d => {
+        let tags = d.redactions.map(x => `<span class="redact-pill">${x.type}</span>`).join(' ');
+        content += `> ${d.title}: Scrubbed ${tags}\n`;
+      });
+    }
+
+    if(num === 5) { // Audit
+      content = `Transaction Logged to Immutable Ledger.\nFlags Fired: ${r.flags.join(", ") || 'NONE'}`;
+    }
+
+    if(num === 6) { // Final Answer
+      content = `>> AI Assistant Output:\n\n${r.answer}`;
+      // Let's make it glow green since it's the final safe output!
+      el.style.borderColor = 'var(--blue)';
+      el.style.boxShadow = 'var(--glow-blue)';
+    }
+
+    if(isDanger) {
+        el.classList.add('danger');
+    } else {
+        el.classList.add('done');
+    }
+    
+    document.getElementById('out-'+num).innerHTML = content.replace(/\n/g, '<br>');
+    
+    // If mosaic blocks, we stop animating the rest!
+    if(data.blocked && num === 2) {
+      for(let j=3; j<=6; j++) {
+        document.getElementById('layer-'+j).style.opacity = '0.1';
+        document.getElementById('out-'+j).innerText = "ABORTED DUE TO THREAT";
+      }
+      break;
+    }
+    
+    await delay(600); // Pause before next layer
+  }
+}
+
+// ── Custom Scenarios ──
+function runPresetScenario(num) {
+  if (num === 1) {
+    selectIdentity('intern_001');
+    executePipeline('What is the CEO salary?');
+  } else if (num === 2) {
+    selectIdentity('analyst_001');
+    executePipeline('What were the Q3 earnings?');
+  } else if (num === 3) {
+    runLiveMosaic();
+  } else if (num === 4) {
+    selectIdentity('analyst_001');
+    executePipeline('Show me the Project Falcon M&A notes');
+  }
+}
+
+async function runLiveMosaic() {
+  // Clear first
+  await fetch(API + '/api/session/clear', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ user_id: selectedUID })
+  });
+  
+  const qList = [
+    "Who leads each major division?",
+    "How many executives are in the C-suite?",
+    "What was the total compensation budget last year?",
+    "How does our executive pay compare to industry peers?",
+    "What bonuses were approved by the compensation committee?"
+  ];
+  
+  for(let q of qList) {
+    document.getElementById('query-input').value = q;
+    await executePipeline(q);
+    // Pause so user can see it build up
+    await new Promise(r => setTimeout(r, 2000));
+  }
+}
+
+// On Load
+fetchGlobals();
+</script>
+</body>
+</html>
