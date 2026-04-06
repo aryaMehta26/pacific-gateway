@@ -3,6 +3,8 @@
 A zero-trust semantic security middleware for enterprise context management systems. The gateway intercepts every query between users and the LLM, enforcing 5 independent security layers before any enterprise data reaches the model. All inference and embedding computation runs locally via Ollama, so no sensitive data ever leaves the network.
 
 ![Dashboard](docs/dashboard.png)
+<img width="1470" height="831" alt="image" src="https://github.com/user-attachments/assets/7cd100af-796e-4639-9cc8-3713e43c8441" />
+
 
 ## Problem
 
